@@ -1,4 +1,3 @@
-# from hash_module import generate_secure_hash as secureHash
 import hashlib
 from random import Random
 import base64
