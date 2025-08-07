@@ -1,7 +1,12 @@
 import hashlib
 from random import Random
 import base64
-from encryptobara import encryptString, generateDetermenisticAlphabet
+from encryptobara import encryptString, generateDetermenisticAlphabet, decrypt, encrypt
+import json
+
+YOURpsswd = 'b:";;aHLLR_iPfwuN2yZ^25#zy{RtGaafVN){YL)twy?{6{>o_\\Q;ht!;pAA4"[~'
+
+YOURkey = 'Gpfve7tq\\eO"G]yP1({]_r>OKL%+P\'-csvKg~VOg{*DVDIf7D(9e\\GppFD,9x*P~'
 
 def choice_random_chars(psswdlen:int, salt:bytes, securepsswd:str) -> str:
     psswd:int = int.from_bytes(salt, byteorder='big')
@@ -42,15 +47,49 @@ def getPsswd(masterpsswd:str, service:str, psswdlen:int, upper:bool, lower:bool,
     
     return choice_random_chars(psswdlen, (enMP+enS+az).encode(), az)
     
+def decoding():
+    crypt = input('Шифр конфига: ')
+    crypt = crypt.split('.')
+    try:
+        config = decrypt(crypt[2], YOURkey)
+        config = json.loads(config)
+    except Exception as ex:
+        print(ex)
+        return
+
+    print(getPsswd(config['mp'], config['serv'], int(config['psswdlen']), config['upper'], config['lower'], config['dig'], config['spec1'], config['spec2'], config['spec3']))
+
+def generate():
+    masterpsswd = YOURpsswd
+    service = input('Название сервиса: ')
+    psswdlen = int(input('Длина пароля: '))
+    upper = bool(input('Верхний регистр["",1]: '))
+    lower = bool(input('Нижний регистр["",1]: '))
+    dig = bool(input('Цифры["",1]: '))
+    spec1 = bool(input('Спец1["",1]: '))
+    spec2 = bool(input('Спец2["",1]: '))
+    spec3 = bool(input('Спец3["",1]: '))
+    config = {
+        'mp':masterpsswd,
+        'serv':service,
+        'psswdlen':psswdlen,
+        'upper':upper,
+        'lower':lower,
+        'dig':dig,
+        'spec1':spec1,
+        'spec2':spec2,
+        'spec3':spec3
+    }
+    encrypted = encrypt(json.dumps(config), YOURkey)
+    print(getPsswd(masterpsswd, service, psswdlen, upper, lower, dig, spec1, spec2, spec3))
+    print()
+    print(f'{service}.{hashlib.sha256(masterpsswd.encode('utf-16')).digest().hex()}.{encrypted}')
 
 if __name__ == '__main__':
-    masterpsswd = 'b:";;aHLLR_iPfwuN2yZ^25#zy{RtGaafVN){YL)twy?{6{>o_\\Q;ht!;pAA4"[~'
-    service = input('Название сервиса: ')
-    psswdlen = bool(input('Длина пароля: '))
-    upper = bool(input('Верхний регистр[0,1]: '))
-    lower = bool(input('Нижний регистр[0,1]: '))
-    dig = bool(input('Цифры[0,1]: '))
-    spec1 = bool(input('Спец1[0,1]: '))
-    spec2 = bool(input('Спец2[0,1]: '))
-    spec3 = bool(input('Спец3[0,1]: '))
-    print(getPsswd(masterpsswd, service, psswdlen, upper, lower, dig, spec1, spec2, spec3))
+    choice = input('Ген/дек?[0,1]: ')
+    if choice == '0':
+        generate()
+    if choice == '1':
+        decoding()
+
+

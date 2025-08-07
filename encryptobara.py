@@ -3,9 +3,11 @@ import base64
 from random import Random
 import random
 
+YOURsecurepsswd = 'F$Qt[QB?}_!td4C-8G>VKJnPFJnNoMu$f1]ufM{la"/l!a8@P"$?@uiM#oVkks"MiVt9t!{L-vTMTn,>dvw[wNW0d!h;Esx0T^GfvSC@t8mI/A)@{mvSdy4xEf+^!_\\A'
+
 def generateDetermenisticAlphabet(key: str, alphabet:str = ''.join(chr(i) for i in range(32, 2**8))):
     az:list = list(alphabet)
-    master:bytes = b'F$Qt[QB?}_!td4C-8G>VKJnPFJnNoMu$f1]ufM{la"/l!a8@P"$?@uiM#oVkks"MiVt9t!{L-vTMTn,>dvw[wNW0d!h;Esx0T^GfvSC@t8mI/A)@{mvSdy4xEf+^!_\\A'
+    master:bytes = YOURsecurepsswd.encode()
     Random(int.from_bytes(hashlib.sha256(master).digest(), 'big')).shuffle(az)
     Random(int.from_bytes(hashlib.sha256(key.encode()).digest(), 'big')).shuffle(az)
     
