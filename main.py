@@ -150,7 +150,7 @@ def genpsswd():
     config = {
         'mp':mpsswd,
         'serv':srv,
-        'psswdlen':lenpsswd,
+        'psswdlen': int(lenpsswd),
         'upper':isUpper,
         'lower':isLower,
         'dig':isDig,
@@ -183,6 +183,7 @@ def decoding():
     crypt = mp.text()
     key.text()
     crypt = crypt.split('.')
+    print(crypt)
     try:
         config = decrypt(crypt[2], key.text())
         config = json.loads(config)
@@ -190,10 +191,10 @@ def decoding():
         outputpsswd.setText(f'{ex}')
         outputsecret.setText('Где-то ошибка!')        
         return
-    
+    print(config)
     mp.setText(config['mp'])
     serv.setText(config['serv'])
-    psswdlen.setText(config['psswdlen'])
+    psswdlen.setText(str(config['psswdlen']))
     upper.setChecked(config['upper'])
     lower.setChecked(config['lower']  )
     dig.setChecked(config['dig']  )
