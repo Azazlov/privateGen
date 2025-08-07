@@ -1,5 +1,7 @@
 from psswd_gen_module import getPsswd as psswd
 from encryptobara import encrypt, decrypt
+import hashlib
+import json
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout,
@@ -17,7 +19,7 @@ mplyt = QVBoxLayout()
 mplbl = QLabel('Мастер-пароль')
 mp = QLineEdit()
 mp.setPlaceholderText("Мастер-пароль")
-mp.setText('b:";;aHLLR_iPfwuN2yZ^25#zy{RtGaafVN){YL)twy?{6{>o_\Q;ht!;pAA4"[~')
+mp.setText('b:";;aHLLR_iPfwuN2yZ^25#zy{RtGaafVN){YL)twy?{6{>o_\\Q;ht!;pAA4"[~')
 mplyt.addWidget(mplbl)
 mplyt.addWidget(mp)
 mpwgt.setLayout(mplyt)
@@ -28,7 +30,7 @@ keylyt = QVBoxLayout()
 keylbl = QLabel('Ключ шифрования')
 key = QLineEdit()
 key.setPlaceholderText("Ключ")
-key.setText('Gpfve7tq\eO"G]yP1({]_r>OKL%+P\'-csvKg~VOg{*DVDIf7D(9e\GppFD,9x*P~')
+key.setText('Gpfve7tq\\eO"G]yP1({]_r>OKL%+P\'-csvKg~VOg{*DVDIf7D(9e\\GppFD,9x*P~')
 keylyt.addWidget(keylbl)
 keylyt.addWidget(key)
 keywgt.setLayout(keylyt)
@@ -124,6 +126,15 @@ outputsecret = QLineEdit()
 layout.addWidget(outputpsswd)
 layout.addWidget(outputsecret)
 
+def check():
+    crypt = mp.text().split('.')
+    if len(crypt) == 3 and len(crypt[1]) == 64:
+        outputpsswd.setText('')
+        decoding()
+        return
+    else:
+        genpsswd()
+
 # Обработчик нажатия кнопки
 def genpsswd():
     mpsswd = mp.text()
@@ -135,10 +146,64 @@ def genpsswd():
     isSpec1 = spec1.isChecked()
     isSpec2 = spec2.isChecked()
     isSpec3 = spec3.isChecked()
-    outputpsswd.setText(psswd(mpsswd, srv, int(lenpsswd), isUpper, isLower, isDig, isSpec1, isSpec2, isSpec3))
-    outputsecret.setText(encrypt(f'mp: {mpsswd} serv: {srv} psswdlen: {lenpsswd} upper: {isUpper} lower: {isLower} dig: {isDig} spec1: {isSpec1} spec2: {isSpec2} spec3: {isSpec3}', key.text()))
 
-toGen.clicked.connect(genpsswd)  # Подключаем обработчик
+    config = {
+        'mp':mpsswd,
+        'serv':srv,
+        'psswdlen':lenpsswd,
+        'upper':isUpper,
+        'lower':isLower,
+        'dig':isDig,
+        'spec1':isSpec1,
+        'spec2':isSpec2,
+        'spec3':isSpec3
+    }
+    try:
+        outputpsswd.setText(
+            psswd(
+                mpsswd, 
+                srv, 
+                int(lenpsswd), 
+                isUpper, 
+                isLower, 
+                isDig, 
+                isSpec1, 
+                isSpec2, 
+                isSpec3
+            )
+        )
+        encrypted = encrypt(json.dumps(config), key.text())
+        outputsecret.setText(f'{srv}.{hashlib.sha256(mpsswd.encode('utf-16')).digest().hex()}.{encrypted}')
+    except Exception as ex:
+        outputpsswd.setText(f'{ex}')
+        outputsecret.setText('Где-то ошибка!')
+        return
+
+def decoding():
+    crypt = mp.text()
+    key.text()
+    crypt = crypt.split('.')
+    try:
+        config = decrypt(crypt[2], key.text())
+        config = json.loads(config)
+    except Exception as ex:
+        outputpsswd.setText(f'{ex}')
+        outputsecret.setText('Где-то ошибка!')        
+        return
+    
+    mp.setText(config['mp'])
+    serv.setText(config['serv'])
+    psswdlen.setText(config['psswdlen'])
+    upper.setChecked(config['upper'])
+    lower.setChecked(config['lower']  )
+    dig.setChecked(config['dig']  )
+    spec1.setChecked(config['spec1']  )
+    spec2.setChecked(config['spec2']  )
+    spec3.setChecked(config['spec3']  )
+
+    genpsswd()
+
+toGen.clicked.connect(check)
 
 window.setLayout(layout)
 window.show()

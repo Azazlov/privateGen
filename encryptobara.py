@@ -1,86 +1,96 @@
-# cython: language_level=3
 import hashlib
 import base64
 from random import Random
-import time
+import random
 
-def generateDetermenisticAlphabet(basecode: bytes):
-    alphabet:str = ''.join(chr(i) for i in range(2**14))
-    az:str = list(alphabet)
+def generateDetermenisticAlphabet(key: str, alphabet:str = ''.join(chr(i) for i in range(32, 2**8))):
+    az:list = list(alphabet)
     master:bytes = b'F$Qt[QB?}_!td4C-8G>VKJnPFJnNoMu$f1]ufM{la"/l!a8@P"$?@uiM#oVkks"MiVt9t!{L-vTMTn,>dvw[wNW0d!h;Esx0T^GfvSC@t8mI/A)@{mvSdy4xEf+^!_\\A'
-    print(f'int from bytes: {int.from_bytes(hashlib.sha256(master).digest())}')
     Random(int.from_bytes(hashlib.sha256(master).digest(), 'big')).shuffle(az)
-    Random(int.from_bytes(hashlib.sha256(basecode).digest(), 'big')).shuffle(az)
+    Random(int.from_bytes(hashlib.sha256(key.encode()).digest(), 'big')).shuffle(az)
+    
     return ''.join(az)
 
-def generateAlphabets(alphabet):
-
-    return [alphabet[i+1:]+alphabet[:i+1] for i in range(len(alphabet)-1)]
-
-def generateSecureKey(mssg:str, key:str, alphabet:str, alphabets:list):
+def generateSecureKey(mssg:str, key:str, alphabet:str):
     lenmssg:int = len(mssg)
     securekey:str = key
+    lenkey:int = len(key)
     lenalphabet:int = len(alphabet)
-    
-    for i in range(lenmssg):
+
+    for i in range(lenkey):
         securekey += alphabet[securekey.encode()[i]%lenalphabet]
 
-    return encryptString(string=securekey, alphabet=alphabet, alphabets=alphabets, key=key)
+    return encryptString(string=securekey[lenkey:], alphabet=alphabet, key=key)
 
-def encryptString(string:str, alphabet:str, alphabets:list, key:str):
+def encryptString(string:str, alphabet:str, key:str):
     lenkey:int = len(key)
+    lenalpha:int = len(alphabet)
     encrypted:str = ''
-    i:str
+    i:int
     char:str
-
+    
     for i, char in enumerate(string):
-        if char not in alphabet:
-            encrypted += char
+        if char not in alphabet or key[i%lenkey] not in alphabet:
+
             print(f'{char} not in alphabet')
             continue
-        for az in alphabets:
-            if az[0] == key[i%lenkey]:
-                encrypted += az[alphabet.index(char)]
-                break
+
+        index = (alphabet.index(char)-alphabet.index(key[i%lenkey])+lenalpha)
+        
+        if index < 0:
+            index += lenalpha
+        if index > lenalpha:
+            index -= lenalpha
+        if index == lenalpha:
+            index -= 1
+
+        encrypted += alphabet[index]
 
     return encrypted
 
-def decryptString(string:str, alphabet:str, alphabets:str, key:str):
+def decryptString(string:str, alphabet:str, key:str):
     lenkey:int = len(key)
+    lenalpha:int = len(alphabet)
     encrypted:str = ''
     i:int
     char:str
 
     for i, char in enumerate(string):
         if char not in alphabet:
-            encrypted += char
+
             print(f'{char} not in alphabet')
             continue
-        for az in alphabets:
-            if az[0] == key[i%lenkey]:
-                encrypted += alphabet[az.index(char)]
-                break
+        index = alphabet.index(char)+alphabet.index(key[i%lenkey])-lenalpha
+        
+        if index < 0:
+            index += lenalpha
+        if index > lenalpha:
+            index -= lenalpha
+            
+        encrypted += alphabet[index]
 
     return encrypted
 
 def encrypt(mssg:str, key:str):
-    a:double = time.time()
-    alphabet:str = generateDetermenisticAlphabet(key.encode())
-    alphabets:list = generateAlphabets(alphabet)
-    key = generateSecureKey(mssg, key, alphabet, alphabets)
-    encrypted:str = encryptString(mssg, alphabet, alphabets, key)
-    print(a-time.time())
-    return base64.b64encode(encrypted.encode('utf-16')).decode('utf-16')
+    alphabet:str = generateDetermenisticAlphabet(key)
+    mssg = base64.b64encode(mssg.encode()).decode()
+    key = generateSecureKey(mssg, key, alphabet)
+    encrypted:str = encryptString(mssg, alphabet, key)
+    encrypted = encrypted.encode('utf-8').hex()
+    key = key.encode('utf-8').hex()
+    encr:str = hex(int(key, 16) - int(encrypted, 16))
+    
+    return encr
 
 def decrypt(secret:str, key:str):
-    secret = base64.b64decode(secret.encode('utf-16')).decode('utf-16')
-    a:double = time.time()
-    alphabet:str = generateDetermenisticAlphabet(key.encode())
-    alphabets:list = generateAlphabets(alphabet)
-    key = generateSecureKey(mssg, key, alphabet, alphabets)
-    decrypted:str = decryptString(mssg, alphabet, alphabets, key)
-    print(a-time.time())
+    alphabet:str = generateDetermenisticAlphabet(key)
+    key = generateSecureKey(secret, key, alphabet)
+    encrypted = hex(int(key.encode('utf-8').hex(), 16) - int(secret, 16))[2:]
+    secret = bytes.fromhex(encrypted).decode('utf-8')
 
+    decrypted:str = decryptString(secret, alphabet, key)
+    decrypted = base64.b64decode(decrypted).decode()
+    
     return decrypted
 
 
@@ -91,13 +101,11 @@ if __name__ == '__main__':
         if choice == '0':
             mssg:str = input('mssg: ')
             key:str = input('key: ')
-            print(key)
             print(f'encrypted: "{encrypt(mssg, key)}"')
 
         if choice == '1':
             secret:str = input('secret: ')
-            key:str = input('key: ')
-            print(key)
+            key = input('key: ')
             print(f'decrypted: {decrypt(secret, key)}')
         choice = input('exit?[0,1]: ')
         if choice == '1':
