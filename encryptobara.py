@@ -5,9 +5,8 @@ import random
 
 YOURsecurepsswd:str = 'F$Qt[QB?}_!td4C-8G>VKJnPFJnNoMu$f1]ufM{la"/l!a8@P"$?@uiM#oVkks"MiVt9t!{L-vTMTn,>dvw[wNW0d!h;Esx0T^GfvSC@t8mI/A)@{mvSdy4xEf+^!_\\A'
 
-def generateDetermenisticAlphabet(key: str, alphabet:str = ''.join(chr(i) for i in range(32, 2**8))) -> str:
+def generateDetermenisticAlphabet(key: str, master:bytes, alphabet:str = ''.join(chr(i) for i in range(32, 2**8))) -> str:
     az:list = list(alphabet)
-    master:bytes = YOURsecurepsswd.encode()
     Random(int.from_bytes(hashlib.sha256(master).digest(), 'big')).shuffle(az)
     Random(int.from_bytes(hashlib.sha256(key.encode()).digest(), 'big')).shuffle(az)
     
@@ -74,9 +73,9 @@ def decryptString(string:str, alphabet:str, key:str) -> str:
 
     return encrypted
 
-def encrypt(mssg:str, key:str) -> str:
+def encrypt(mssg:str, key:str, master:str) -> str:
     print(mssg, key)
-    alphabet:str = generateDetermenisticAlphabet(key)
+    alphabet:str = generateDetermenisticAlphabet(key, master.encode())
     mssg = base64.b64encode(mssg.encode()).decode()
     key = generateSecureKey(mssg, key, alphabet)
     encrypted:str = encryptString(mssg, alphabet, key)
@@ -86,8 +85,8 @@ def encrypt(mssg:str, key:str) -> str:
     
     return encr
 
-def decrypt(secret:str, key:str) -> str:
-    alphabet:str = generateDetermenisticAlphabet(key)
+def decrypt(secret:str, key:str, master:str) -> str:
+    alphabet:str = generateDetermenisticAlphabet(key, master.encode())
     key = generateSecureKey(secret, key, alphabet)
     encrypted = hex(int(key.encode('utf-8').hex(), 16) - int(secret, 16))[2:]
     secret = bytes.fromhex(encrypted).decode('utf-8')
@@ -101,17 +100,19 @@ def decrypt(secret:str, key:str) -> str:
 if __name__ == '__main__':
     while True:
         choice:str = input('Code/decode[0,1]: ')
+        master:str = input('master: ')
+        securepsswd = master if master != '' else YOURsecurepsswd
         key:str
 
         if choice == '0':
             mssg:str = input('mssg: ')
             key = input('key: ')
-            print(f'encrypted: "{encrypt(mssg, key)}"')
+            print(f'encrypted: "{encrypt(mssg, key, securepsswd)}"')
 
         if choice == '1':
             secret:str = input('secret: ')
             key = input('key: ')
-            print(f'decrypted: {decrypt(secret, key)}')
+            print(f'decrypted: {decrypt(secret, key, securepsswd)}')
         choice = input('exit?[0,1]: ')
         if choice == '1':
             break
