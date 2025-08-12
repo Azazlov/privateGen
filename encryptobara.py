@@ -1,19 +1,27 @@
 import hashlib
-import base64
 from random import Random
 import random
+from os import urandom
+from customRSA import encryptRSA, decryptRSA, getDPQ, getEN, conv, deconv, genSecretRSA, unGenSecretRSA
+from config import alphabet, YOURsecurepsswd
 
-YOURsecurepsswd:str = 'F$Qt[QB?}_!td4C-8G>VKJnPFJnNoMu$f1]ufM{la"/l!a8@P"$?@uiM#oVkks"MiVt9t!{L-vTMTn,>dvw[wNW0d!h;Esx0T^GfvSC@t8mI/A)@{mvSdy4xEf+^!_\\A'
+alphabetlen = 2**15
+i:int
 
-def generateDetermenisticAlphabet(key: str, master:bytes, alphabet:str = ''.join(chr(i) for i in range(32, 2**8))) -> str:
+def generatePublicKey(alphabet:str=alphabet) -> str:
+    alphabet = generateDetermenisticAlphabet(key=random.randbytes(random.randrange(65536)).hex(), master=random.randbytes(random.randrange(65536)).hex(), alphabet=alphabet)
+    rand:int = random.randrange(2**16, 2**32) 
+    securepsswd:str = conv(deconv(alphabet, len(alphabet), alphabet), len(alphabet), alphabet)
+    return securepsswd
+
+def generateDetermenisticAlphabet(key: str, master:str, alphabet:str = ''.join(chr(i) for i in range(alphabetlen))) -> str:
     az:list = list(alphabet)
-    Random(int.from_bytes(hashlib.sha256(master).digest(), 'big')).shuffle(az)
+    Random(int.from_bytes(hashlib.sha256(master.encode()).digest(), 'big')).shuffle(az)
     Random(int.from_bytes(hashlib.sha256(key.encode()).digest(), 'big')).shuffle(az)
     
     return ''.join(az)
 
-def generateSecureKey(mssg:str, key:str, alphabet:str) -> str:
-    lenmssg:int = len(mssg)
+def generateSecureKey(key:str, alphabet:str) -> str:
     securekey:str = key
     lenkey:int = len(key)
     lenalphabet:int = len(alphabet)
@@ -36,14 +44,16 @@ def encryptString(string:str, alphabet:str, key:str) -> str:
             print(f'{char} not in alphabet')
             continue
 
-        index = (alphabet.index(char)-alphabet.index(key[i%lenkey])+lenalpha)
+        index = alphabet.index(char) - alphabet.index(key[i%lenkey]) + lenalpha
         
         if index < 0:
             index += lenalpha
         if index > lenalpha:
             index -= lenalpha
         if index == lenalpha:
-            index -= 1
+            index = 0
+            
+        # print(alphabet.index(char), index)
 
         encrypted += alphabet[index]
 
@@ -62,57 +72,85 @@ def decryptString(string:str, alphabet:str, key:str) -> str:
 
             print(f'{char} not in alphabet')
             continue
-        index = alphabet.index(char)+alphabet.index(key[i%lenkey])-lenalpha
+        index = (alphabet.index(char) + alphabet.index(key[i%lenkey]) - lenalpha)
         
         if index < 0:
             index += lenalpha
         if index > lenalpha:
             index -= lenalpha
+        if index == lenalpha:
+            index = 0
             
         encrypted += alphabet[index]
 
     return encrypted
 
-def encrypt(mssg:str, key:str, master:str) -> str:
-    print(mssg, key)
-    alphabet:str = generateDetermenisticAlphabet(key, master.encode())
-    mssg = base64.b64encode(mssg.encode()).decode()
-    key = generateSecureKey(mssg, key, alphabet)
-    encrypted:str = encryptString(mssg, alphabet, key)
-    encrypted = encrypted.encode('utf-8').hex()
-    key = key.encode('utf-8').hex()
-    encr:str = hex(int(key, 16) - int(encrypted, 16))
+def encrypt(mssg:str, key:str, master:str, alphabet=alphabet) -> str:
+    saltKey:str = conv(int.from_bytes(urandom(128), 'big'), len(alphabet), alphabet)
+    saltMaster:str = conv(int.from_bytes(urandom(128), 'big'), len(alphabet), alphabet)
+    key = generateSecureKey(key+saltKey, generateDetermenisticAlphabet(key+saltKey, master+saltMaster))
+    alphabet = generateDetermenisticAlphabet(key+saltKey, master+saltMaster, alphabet=alphabet)
+    mssg = encryptString(mssg, generateDetermenisticAlphabet(key+saltKey, master+saltMaster), key+saltKey)
+    encryptint:int = int.from_bytes(bytes(mssg[0:], 'utf-16'))
+    encrypted:str = conv(encryptint, len(alphabet), alphabet)
     
-    return encr
+    return f'{saltKey}.{saltMaster}.{encrypted}'
 
-def decrypt(secret:str, key:str, master:str) -> str:
-    alphabet:str = generateDetermenisticAlphabet(key, master.encode())
-    key = generateSecureKey(secret, key, alphabet)
-    encrypted = hex(int(key.encode('utf-8').hex(), 16) - int(secret, 16))[2:]
-    secret = bytes.fromhex(encrypted).decode('utf-8')
+def decrypt(secret:str, key:str, master:str, alphabet:str=alphabet) -> str:
+    saltKey:str
+    saltMaster:str
+    try:
+        saltKey, saltMaster, secret = secret.split('.')
+    except:
+        raise ValueError('Неправильный формат шифра')
+    key = generateSecureKey(key+saltKey, generateDetermenisticAlphabet(key+saltKey, master+saltMaster))
+    alphabet = generateDetermenisticAlphabet(key+saltKey, master+saltMaster, alphabet=alphabet)
+    secrint:int = deconv(secret, len(alphabet), alphabet)
+    try:
+        secret = secrint.to_bytes(secrint.bit_length()//8+1, 'big')[1:].decode('utf-16')
+        secret = decryptString(secret, generateDetermenisticAlphabet(key+saltKey, master+saltMaster), key+saltKey)
+    except:
+        raise ValueError('Неверный шифртекст или какой-либо из ключей')
 
-    decrypted:str = decryptString(secret, alphabet, key)
-    decrypted = base64.b64decode(decrypted).decode()
-    
-    return decrypted
+    return secret
+
+
 
 
 if __name__ == '__main__':
+    master:str 
+    key:str
+    mssg:str
+    RSA:bool
     while True:
-        choice:str = input('Code/decode[0,1]: ')
-        master:str = input('master: ')
-        securepsswd = master if master != '' else YOURsecurepsswd
-        key:str
+        choice = input('Code/decode/getKey[0, 1, 2]: ')
+        
+        if choice == '2':
+            en = getEN(input('config: '))
+            print(f'\n{en[0]}.{en[1]}\n')
+            choice = input('Code/decode/getKey[0, 1, 2]: ')
+        RSA = bool(input('RSA["", 1]: '))
 
         if choice == '0':
-            mssg:str = input('mssg: ')
-            key = input('key: ')
-            print(f'encrypted: "{encrypt(mssg, key, securepsswd)}"')
+            if RSA:
+                print(genSecretRSA(input('config: '), input('mssg: ')))
+            else:
+                mssg = input('mssg: ')
+                master = input('master: ')
+                securepsswd = master if master != '' else YOURsecurepsswd
+                key = input('key: ')
+                print(f'encrypted: "{encrypt(mssg, key, securepsswd)}"')
 
         if choice == '1':
-            secret:str = input('secret: ')
-            key = input('key: ')
-            print(f'decrypted: {decrypt(secret, key, securepsswd)}')
+            if RSA:
+                print(unGenSecretRSA(input('config: '), input('secret: ')))
+            else:
+                secret = input('secret: ')
+                master = input('master: ')
+                securepsswd = master if master != '' else YOURsecurepsswd
+                key = input('key: ')
+                print(f'decrypted: {decrypt(secret, key, securepsswd)}')
+                
         choice = input('exit?[0,1]: ')
         if choice == '1':
             break

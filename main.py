@@ -2,6 +2,9 @@ from psswd_gen_module import getPsswd as psswd
 from encryptobara import encrypt, decrypt
 import hashlib
 import json
+from random import randbytes, randint
+from customRSA import conv
+from config import YOURkey, YOURmaster, YOURsecurepsswd
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout,
@@ -13,13 +16,12 @@ app = QApplication([])
 window = QWidget()
 layout = QVBoxLayout()
 
-
 mpwgt = QWidget()
 mplyt = QVBoxLayout()
 mplbl = QLabel('Мастер-пароль')
 mp = QLineEdit()
 mp.setPlaceholderText("Мастер-пароль")
-mp.setText('b:";;aHLLR_iPfwuN2yZ^25#zy{RtGaafVN){YL)twy?{6{>o_\\Q;ht!;pAA4"[~') #Здесь можно вставить свой пароль
+mp.setText(YOURmaster) #Здесь можно вставить свой пароль
 mplyt.addWidget(mplbl)
 mplyt.addWidget(mp)
 mpwgt.setLayout(mplyt)
@@ -30,7 +32,7 @@ keylyt = QVBoxLayout()
 keylbl = QLabel('Ключ шифрования')
 key = QLineEdit()
 key.setPlaceholderText("Ключ")
-key.setText('Gpfve7tq\\eO"G]yP1({]_r>OKL%+P\'-csvKg~VOg{*DVDIf7D(9e\\GppFD,9x*P~') #Здесь можно вставить свой ключ
+key.setText(YOURkey) #Здесь можно вставить свой ключ
 keylyt.addWidget(keylbl)
 keylyt.addWidget(key)
 keywgt.setLayout(keylyt)
@@ -128,7 +130,8 @@ layout.addWidget(outputsecret)
 
 def check():
     crypt = mp.text().split('.')
-    if len(crypt) == 3 and len(crypt[1]) == 64:
+
+    if len(crypt) == 4:
         outputpsswd.setText('')
         decoding()
         return
@@ -138,6 +141,7 @@ def check():
 # Обработчик нажатия кнопки
 def genpsswd():
     mpsswd = mp.text()
+    mp.setText(conv(int.from_bytes(randbytes(randint(32, 64)), 'big'), 36))
     srv = serv.text()
     lenpsswd = psswdlen.text()
     isUpper = upper.isChecked()
@@ -172,8 +176,8 @@ def genpsswd():
                 isSpec3
             )
         )
-        encrypted = encrypt(json.dumps(config), key.text())
-        outputsecret.setText(f'{srv}.{hashlib.sha256(mpsswd.encode('utf-16')).digest().hex()}.{encrypted}')
+        encrypted = encrypt(json.dumps(config), key.text(), YOURsecurepsswd)
+        outputsecret.setText(f'{srv}.{encrypted}')
     except Exception as ex:
         outputpsswd.setText(f'{ex}')
         outputsecret.setText('Где-то ошибка!')
@@ -183,15 +187,15 @@ def decoding():
     crypt = mp.text()
     key.text()
     crypt = crypt.split('.')
-    print(crypt)
+ 
     try:
-        config = decrypt(crypt[2], key.text())
+        config = decrypt(f'{crypt[1]}.{crypt[2]}.{crypt[3]}', key.text(), YOURsecurepsswd)
         config = json.loads(config)
     except Exception as ex:
         outputpsswd.setText(f'{ex}')
         outputsecret.setText('Где-то ошибка!')        
         return
-    print(config)
+
     mp.setText(config['mp'])
     serv.setText(config['serv'])
     psswdlen.setText(str(config['psswdlen']))
