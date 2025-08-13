@@ -38,7 +38,8 @@ def decryptRSA(c:int, private_key:tuple) -> int:
 
 def genSecretRSA(config:str, mssg:str):
     en:tuple = getEN(config, True)
-    crint:int = int.from_bytes(mssg.encode(), 'big')
+    crint:int = int.from_bytes(mssg.encode('utf-8'), 'big')
+    print(crint)
     
     return f'{conv(en[0], 36)}.{conv(en[1], 36)}.{conv(encryptRSA(crint, en), 36)}'
 
@@ -46,8 +47,9 @@ def unGenSecretRSA(config:str, secret:str):
     dpq = getDPQ(config, True)
     secret = secret.split('.')[-1]
     crint = int(secret, 36)
+    print(crint)
     code = decryptRSA(crint, dpq)
-    return code.to_bytes(getBitsNum(code), 'big').decode()
+    return code.to_bytes(getBitsNum(code), 'big').decode('utf-8')
 
 def getBitsNum(integer:int):
     return integer.bit_length()//8+1 if integer.bit_length()%8 != 0 else integer.bit_length()
@@ -75,57 +77,61 @@ def deconv(value:str, base:int, alphabet:str="0123456789ABCDEFGHIJKLMNOPQRSTUVWX
 
 
 
-# Функция для проверки простоты числа
-def is_prime(num):
-    if num <= 1:
+import random
+import math
+
+def is_probable_prime(n, k=10):
+    """Проверка простоты числа методом Миллера-Рабина."""
+    if n < 2:
         return False
-    if num <= 3:
-        return True
-    if num % 2 == 0 or num % 3 == 0:
-        return False
-    i = 5
-    while i * i <= num:
-        if num % i == 0 or num % (i + 2) == 0:
+    for p in [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]:
+        if n % p == 0:
+            return n == p
+
+    r, s = 0, n - 1
+    while s % 2 == 0:
+        r += 1
+        s //= 2
+    for _ in range(k):
+        a = random.randrange(2, n - 1)
+        x = pow(a, s, n)
+        if x in (1, n - 1):
+            continue
+        for _ in range(r - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
             return False
-        i += 6
     return True
 
-# Генерация простых чисел
-def generate_prime():
+def generate_prime(bits):
+    """Генерация простого числа заданного размера в битах."""
     while True:
-        num = random.randint(2**32, 2**51)  # Генерируем случайное число
-        if is_prime(num):
+        num = random.getrandbits(bits) | (1 << (bits - 1)) | 1
+        if is_probable_prime(num):
             return num
 
-# Генерация ключей
 def generate_keys():
-    # Генерируем два простых числа
-    p = generate_prime()
-    q = generate_prime()
-    
-    # Вычисляем n и φ(n)
+    bits = 2048  # примерно 2 раза больше текущего n
+    p = generate_prime(bits)
+    q = generate_prime(bits)
+
     n = p * q
     phi = (p - 1) * (q - 1)
-    
-    # Выбираем открытый показатель e
-    e = random.randrange(1, phi)
-    while math.gcd(e, phi) != 1:
-        e = random.randrange(1, phi)
-    
-    # Вычисляем закрытый ключ d
+
+    e = 65537
     d = pow(e, -1, phi)
-    
-    # Возвращаем открытый и закрытый ключи
+
     public_key = (e, n)
     private_key = (d, p, q)
-    
-    return public_key, private_key
+
+    return f'{conv(private_key[0], 36)}.{conv(private_key[1], 36)}.{conv(private_key[2], 36)}.{conv(public_key[0], 36)}.{conv(public_key[1], 36)}'
 
 
 def main():
-    # Генерируем ключи
-    public_key, private_key = generate_keys()
-    print(f'{conv(private_key[0], 36)}.{conv(private_key[1], 36)}.{conv(private_key[2], 36)}.{conv(public_key[0], 36)}.{conv(public_key[1], 36)}')
+
+    print(generate_keys())
     
 # Пример использования
 if __name__ == "__main__":

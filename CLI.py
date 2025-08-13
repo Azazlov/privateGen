@@ -3,8 +3,7 @@ from random import randbytes, randint
 from encryptobara import encrypt, decrypt, conv, deconv
 from psswd_gen_module import getPsswd
 from config import YOURkey, YOURmaster
-from GenKey import generateConfig
-from customRSA import genSecretRSA, unGenSecretRSA, getEN
+from customRSA import genSecretRSA, unGenSecretRSA, getEN, generate_keys
 
 class CLIApp:
     def __init__(self):
@@ -124,7 +123,7 @@ class CLIApp:
             if choice == "0":
                 return
             if choice == "1":
-                print("RSA ключ:", generateConfig())
+                print("RSA ключ:", generate_keys())
             elif choice == "2":
                 key = input("RSA ключ: ")
                 try:
@@ -134,7 +133,7 @@ class CLIApp:
                     print("Ошибка:", ex)
             elif choice == "3":
                 key = input("RSA ключ: ")
-                msg = input("Сообщение: ")
+                msg = input("Сообщение (12 симв. макс.): ")
                 try:
                     print("Результат:", genSecretRSA(key, msg))
                 except Exception as ex:
