@@ -264,6 +264,7 @@ class MainWindow(QWidget):
         self.addTab(self.tab2_layout, self.psswdLen)
         self.tab2_layout.addWidget(self.getHWidget(self.upperLet))
         self.tab2_layout.addWidget(self.getHWidget(self.lowerLet))
+        self.tab2_layout.addWidget(self.getHWidget(self.dig))
         self.tab2_layout.addWidget(self.getHWidget(self.specChar1))
         self.tab2_layout.addWidget(self.getHWidget(self.specChar2))
         self.tab2_layout.addWidget(self.getHWidget(self.specChar3))

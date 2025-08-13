@@ -2,3 +2,6 @@
 config.py
 .vscode
 .mypy_cache
+PrivateGen.spec
+build
+dist
