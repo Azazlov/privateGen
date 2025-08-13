@@ -8,11 +8,11 @@ from config import alphabet, YOURsecurepsswd
 alphabetlen = 2**15
 i:int
 
-def generatePublicKey(alphabet:str=alphabet) -> str:
-    alphabet = generateDetermenisticAlphabet(key=random.randbytes(random.randrange(65536)).hex(), master=random.randbytes(random.randrange(65536)).hex(), alphabet=alphabet)
-    rand:int = random.randrange(2**16, 2**32) 
-    securepsswd:str = conv(deconv(alphabet, len(alphabet), alphabet), len(alphabet), alphabet)
-    return securepsswd
+# def generatePublicKey(alphabet:str=alphabet) -> str:
+#     alphabet = generateDetermenisticAlphabet(key=random.randbytes(random.randrange(65536)).hex(), master=random.randbytes(random.randrange(65536)).hex(), alphabet=alphabet)
+#     rand:int = random.randrange(2**16, 2**32) 
+#     securepsswd:str = conv(deconv(alphabet, len(alphabet), alphabet), len(alphabet), alphabet)
+#     return securepsswd
 
 def generateDetermenisticAlphabet(key: str, master:str, alphabet:str = ''.join(chr(i) for i in range(alphabetlen))) -> str:
     az:list = list(alphabet)
