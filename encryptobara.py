@@ -126,8 +126,8 @@ if __name__ == '__main__':
         choice = input('Code/decode/getKey[0, 1, 2]: ')
         
         if choice == '2':
-            en = getEN(input('config: '))
-            print(f'\n{en[0]}.{en[1]}\n')
+            e, n = getEN(input('config: '))
+            print(f'\n{e}.{n}\n')
             choice = input('Code/decode/getKey[0, 1, 2]: ')
         RSA = bool(input('RSA["", 1]: '))
 

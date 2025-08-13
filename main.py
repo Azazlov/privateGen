@@ -6,13 +6,15 @@ from random import randbytes, randint
 from psswd_gen_module import getPsswd
 import json
 from config import YOURkey, YOURmaster, YOURpsswd, YOURsecurepsswd
+from GenKey import generateConfig
+from customRSA import genSecretRSA, unGenSecretRSA, getEN
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle('PrivateGen')
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 300, 600)
 
         self.tab_widget = QTabWidget()
         
@@ -62,28 +64,34 @@ class MainWindow(QWidget):
         self.decoded.setText(encrypt(self.mssg[1].text(), self.key[1].text(), self.master[1].text()))
 
     def decode(self):
+        if (self.key[1].text() == '' or self.master[1].text() == '') and self.mssg[1].text() == '':
+            return
+        
         crypt = self.mssg[1].text().split('.')
-        if len(crypt) == 3 and len(crypt[1]) == 64:
-            self.decrypting()
-            return
-        if self.key[1].text() == '' or self.mssg[1].text() == '':
-            return
+
+        if len(crypt) == 4:
+            try:
+                self.decrypting()
+                return
+            except:
+                pass
+            
         try:
             self.decoded.setText(decrypt(self.mssg[1].text(), self.key[1].text(), self.master[1].text()))
         except Exception as ex:
             self.decoded.setText(f'{ex}')
         
+        return
+        
     def decrypting(self):
-        crypt = msg.text()
-        key.text()
-        crypt = crypt.split('.')
-        try:
-            config = decrypt(crypt[2], key.text(), YOURsecurepsswd)
-            config = json.loads(config)
-            output.setText(f'{config}')
-        except Exception as ex:
-            print(ex)
-            return
+        crypt = self.mssg[1].text()
+        crypt = crypt.split('.')[1:]
+        
+        config = decrypt(f'{crypt[0]}.{crypt[1]}.{crypt[2]}', self.key[1].text(), self.master[1].text())
+        config = json.loads(config)
+        self.decoded.setText(f'{config}')
+            
+        return
            
     def check(self):
         crypt = self.mp[1].text().split('.')
@@ -94,6 +102,7 @@ class MainWindow(QWidget):
             return
         else:
             self.genpsswd()
+            return
 
     def genpsswd(self):
         mpsswd = self.mp[1].text()
@@ -167,15 +176,40 @@ class MainWindow(QWidget):
         self.specChar3[1].setChecked(config['spec3']  )
 
         self.genpsswd()
+        self.mp[1].setText(config['mp'])
+        
+        return
 
+    def getConfig(self):
+        config = generateConfig()
+        self.RSAkey[1].setText(config)
+        
+    def RSAdecode(self):
+        try:
+            self.RSAoutput[1].setText(unGenSecretRSA(self.RSAkey[1].text(), self.RSAinput[1].text()))
+        except Exception as ex:
+            self.RSAoutput[1].setText(f'{ex}')
+    
+    def RSAcode(self):
+        try:
+            self.RSAoutput[1].setText(genSecretRSA(self.RSAkey[1].text(), self.RSAinput[1].text()))
+        except Exception as ex:
+            self.RSAoutput[1].setText(f'{ex}')
+    
+    def shareConfig(self):
+        try:
+            e, n = getEN(self.RSAkey[1].text())
+            self.RSAoutput[1].setText(f'{e}.{n}')
+        except Exception as ex:
+            self.RSAoutput[1].setText(f'{ex}')
         
     def encrypter(self):
         
         self.tab1 = QWidget()
         self.tab1_layout = QVBoxLayout()
         self.mssg = self.createBlock('Сообщение/Код', "любой текст")
-        self.key = self.createBlock('Ключ', "любой текст")
-        self.master = self.createBlock('Мастер-ключ', "любой текст")
+        self.key = self.createBlock('Ключ', "любой текст", YOURkey)
+        self.master = self.createBlock('Мастер-ключ', "любой текст", YOURmaster)
         
         self.codebtn = QPushButton("Кодировать")
         self.decodebtn = QPushButton("Декодировать")
@@ -203,10 +237,10 @@ class MainWindow(QWidget):
         
         self.mp = self.createBlock('Мастер-пароль/Зашифрованный конфиг', "Любой текст")
         self.rand = self.createRadio("Рандомный мастер-пароль")
-        self.genKey = self.createBlock("Ключ шифрования", "Любой текст")
-        self.genMasterKey = self.createBlock("Мастер-ключ шифрования", "Любой текст")
+        self.genKey = self.createBlock("Ключ шифрования", "Любой текст", YOURkey)
+        self.genMasterKey = self.createBlock("Мастер-ключ шифрования", "Любой текст", YOURmaster)
         self.serv = self.createBlock("Название сервиса (Без точки)", "Любой текст без точки")
-        self.psswdLen = self.createBlock("Длина пароля", "Любое число")
+        self.psswdLen = self.createBlock("Длина пароля", "Любое число", '8')
         
         self.upperLet = self.createRadio('Верхний регистр')
         self.lowerLet = self.createRadio('Нижний регистр')
@@ -223,7 +257,7 @@ class MainWindow(QWidget):
         self.genButton.clicked.connect(self.check)
         
         self.addTab(self.tab2_layout, self.mp)
-        self.addTab(self.tab2_layout, self.rand)
+        self.tab2_layout.addWidget(self.getHWidget(self.rand))
         self.addTab(self.tab2_layout, self.genKey)
         self.addTab(self.tab2_layout, self.genMasterKey)
         self.addTab(self.tab2_layout, self.serv)
@@ -247,7 +281,26 @@ class MainWindow(QWidget):
         self.tab3 = QWidget()
         self.tab3_layout = QVBoxLayout()
         
+        self.RSAgenbtn = QPushButton('Сгенерировать RSA ключ')
+        self.RSAgenbtn.clicked.connect(self.getConfig)
+        self.RSAsharebtn = QPushButton('Получить открытый RSA ключ')
+        self.RSAsharebtn.clicked.connect(self.shareConfig)
+        self.RSAcodebtn = QPushButton('Кодировать')
+        self.RSAcodebtn.clicked.connect(self.RSAcode)
+        self.RSAdecodebtn = QPushButton('Декодировать')
+        self.RSAdecodebtn.clicked.connect(self.RSAdecode)
         
+        self.RSAinput = self.createBlock('Сообщение/код')
+        self.RSAkey = self.createBlock('RSA-ключ')
+        self.RSAoutput = self.createBlock('')
+        
+        self.tab3_layout.addWidget(self.RSAgenbtn)
+        self.tab3_layout.addWidget(self.RSAsharebtn)
+        self.addTab(self.tab3_layout, self.RSAinput)
+        self.addTab(self.tab3_layout, self.RSAkey)
+        self.tab3_layout.addWidget(self.RSAcodebtn)
+        self.tab3_layout.addWidget(self.RSAdecodebtn)
+        self.addTab(self.tab3_layout, self.RSAoutput)
         
         self.tab3.setLayout(self.tab3_layout)
         

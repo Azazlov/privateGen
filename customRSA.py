@@ -1,19 +1,6 @@
 import random
 import math
 
-def decryptRSA(c:int, private_key:tuple) -> int:
-    d, p, q = private_key
-    dp = d % (p - 1)
-    dq = d % (q - 1)
-    qp_inv = pow(q, -1, p)  # обратное к q по модулю p
-    
-    m1 = pow(c, dp, p)
-    m2 = pow(c, dq, q)
-    h = (qp_inv * (m1 - m2)) % p
-    m = m2 + h * q
-    
-    return m
-
 def getEN(key:str, conv:bool=False) -> tuple:
     e = key.split('.')[-2]
     n = key.split('.')[-1]
@@ -35,6 +22,19 @@ def getDPQ(key:str, conv:bool=False) -> tuple:
 def encryptRSA(message:int, public_key:tuple) -> int:
     e, n = public_key
     return pow(message, e, n)
+
+def decryptRSA(c:int, private_key:tuple) -> int:
+    d, p, q = private_key
+    dp = d % (p - 1)
+    dq = d % (q - 1)
+    qp_inv = pow(q, -1, p)  # обратное к q по модулю p
+    
+    m1 = pow(c, dp, p)
+    m2 = pow(c, dq, q)
+    h = (qp_inv * (m1 - m2)) % p
+    m = m2 + h * q
+    
+    return m
 
 def genSecretRSA(config:str, mssg:str):
     en:tuple = getEN(config, True)
