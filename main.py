@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
-from encryptobara import encrypt, decrypt, conv, deconv
+from encryptobara import encrypt, decrypt, conv, deconv, generateRandomMaster
 from random import randbytes, randint
 from psswd_gen_module import getPsswd
 import json
@@ -106,7 +106,7 @@ class MainWindow(QWidget):
 
     def genpsswd(self):
         mpsswd = self.mp[1].text()
-        self.mp[1].setText(conv(int.from_bytes(randbytes(randint(32, 64)), 'big'), 36)) if self.rand[1].isChecked() else 0
+        self.mp[1].setText(generateRandomMaster()) if self.rand[1].isChecked() else 0
         srv = self.serv[1].text()
         try:
             lenpsswd = int(self.psswdLen[1].text())

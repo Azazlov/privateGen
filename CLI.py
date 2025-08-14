@@ -1,6 +1,6 @@
 import json
 from random import randbytes, randint
-from encryptobara import encrypt, decrypt, conv, deconv
+from encryptobara import encrypt, decrypt, conv, deconv, generateRandomMaster
 from psswd_gen_module import getPsswd
 from config import YOURkey, YOURmaster
 from customRSA import genSecretRSA, unGenSecretRSA, getEN, generate_keys
@@ -81,7 +81,7 @@ class CLIApp:
             else:
                 # Генерация пароля с нуля
                 if not mp_input:
-                    mp_input = conv(int.from_bytes(randbytes(randint(32, 64)), 'big'), 36)
+                    mp_input = generateRandomMaster()
                     print("Случайный мастер-пароль:", mp_input)
 
                 gen_key = input(f"Ключ шифрования (по умолчанию {YOURkey}): ") or YOURkey
@@ -133,7 +133,7 @@ class CLIApp:
                     print("Ошибка:", ex)
             elif choice == "3":
                 key = input("RSA ключ: ")
-                msg = input("Сообщение (12 симв. макс.): ")
+                msg = input("Сообщение: ")
                 try:
                     print("Результат:", genSecretRSA(key, msg))
                 except Exception as ex:
