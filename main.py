@@ -1,11 +1,10 @@
 import sys
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
-from encryptobara import encrypt, decrypt, conv, deconv, generateRandomMaster
-from random import randbytes, randint
+from encryptobara import encrypt, decrypt, conv, generateRandomMaster
 from psswd_gen_module import getPsswd
 import json
-from config import YOURkey, YOURmaster, YOURpsswd, YOURsecurepsswd
+from config import YOURkey, YOURmaster, YOURsecurepsswd
 from GenKey import generateConfig
 from customRSA import genSecretRSA, unGenSecretRSA, getEN
 
@@ -235,7 +234,7 @@ class MainWindow(QWidget):
         self.tab2 = QWidget()
         self.tab2_layout = QVBoxLayout()
         
-        self.mp = self.createBlock('Мастер-пароль/Зашифрованный конфиг', "Любой текст")
+        self.mp = self.createBlock('Мастер-пароль/Зашифрованный конфиг', "Любой текст", YOURsecurepsswd)
         self.rand = self.createRadio("Рандомный мастер-пароль")
         self.genKey = self.createBlock("Ключ шифрования", "Любой текст", YOURkey)
         self.genMasterKey = self.createBlock("Мастер-ключ шифрования", "Любой текст", YOURmaster)

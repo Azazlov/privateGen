@@ -9,10 +9,9 @@ alphabetlen = 2**15
 i:int
 
 def generateRandomMaster(alphabet:str=alphabet) -> str:
-    alphabet = generateDetermenisticAlphabet(key=random.randbytes(random.randrange(65536)).hex(), master=random.randbytes(random.randrange(65536)).hex(), alphabet=alphabet)
-    rand:int = random.randrange(2**16, 2**32) 
-    securepsswd:str = conv(deconv(alphabet, len(alphabet), alphabet), len(alphabet), alphabet)
-    return securepsswd
+    master:list = list(generateDetermenisticAlphabet(key=urandom(32).hex(), master=urandom(32).hex(), alphabet=alphabet))
+    Random(urandom(16)).shuffle(master)
+    return ''.join(master)
 
 def generateDetermenisticAlphabet(key: str, master:str, alphabet:str = ''.join(chr(i) for i in range(alphabetlen))) -> str:
     az:list = list(alphabet)

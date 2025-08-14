@@ -1,6 +1,5 @@
 import json
-from random import randbytes, randint
-from encryptobara import encrypt, decrypt, conv, deconv, generateRandomMaster
+from encryptobara import encrypt, decrypt, generateRandomMaster
 from psswd_gen_module import getPsswd
 from config import YOURkey, YOURmaster
 from customRSA import genSecretRSA, unGenSecretRSA, getEN, generate_keys
