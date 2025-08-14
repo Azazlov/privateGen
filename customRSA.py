@@ -39,7 +39,6 @@ def decryptRSA(c:int, private_key:tuple) -> int:
 def genSecretRSA(config:str, mssg:str):
     en:tuple = getEN(config, True)
     crint:int = int.from_bytes(mssg.encode('utf-8'), 'big')
-    print(crint)
     
     return f'{conv(en[0], 36)}.{conv(en[1], 36)}.{conv(encryptRSA(crint, en), 36)}'
 
@@ -47,7 +46,6 @@ def unGenSecretRSA(config:str, secret:str):
     dpq = getDPQ(config, True)
     secret = secret.split('.')[-1]
     crint = int(secret, 36)
-    print(crint)
     code = decryptRSA(crint, dpq)
     return code.to_bytes(getBitsNum(code), 'big').decode('utf-8')
 
