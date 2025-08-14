@@ -1,7 +1,7 @@
 /__pycache__
-config.py
 .vscode
 .mypy_cache
 PrivateGen.spec
 build
 dist
+config.py
